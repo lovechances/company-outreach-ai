@@ -54,6 +54,8 @@ def run_lead_brief_operator(url: str) -> dict:
 
         if analyzer_result["status"] != "ok":
             total_duration = time.perf_counter() - start_time
+            if analyzer_duration > 8:
+                logger.warning(f"[ANALYZER] Slow stage duration={analyzer_duration:.2f}s")
             logger.warning(
                 f"[REQUEST] Failed at analyzer url={url} duration={total_duration:.2f}s"
             )
@@ -73,6 +75,8 @@ def run_lead_brief_operator(url: str) -> dict:
         logger.info("[WRITER] Starting")
         writer_result = write_outreach(analyzer_result["data"], url)
         writer_duration = time.perf_counter() - writer_start
+        if writer_duration > 4:
+            logger.warning(f"[WRITER] Slow stage duration={writer_duration:.2f}s")
 
         logger.info(
             f"[WRITER] status={writer_result['status']} "
@@ -90,6 +94,8 @@ def run_lead_brief_operator(url: str) -> dict:
         )
 
         total_duration = time.perf_counter() - start_time
+        if total_duration > 12:
+            logger.warning(f"[REQUEST] Slow total duration={total_duration:.2f}s url={url}")
         logger.info(
             f"[REQUEST] Completed url={url} status=ok duration={total_duration:.2f}s"
         )

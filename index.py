@@ -131,5 +131,24 @@ def analyze_company(payload: AnalyzeRequest):
         return shaped
     except Exception as e:
         logger.exception(f"[API] /analyze failed url={url} error={e}")
-        raise HTTPException(status_code=500, detail=f"Operator failed: {e}")
+        return {
+            "status": "failed",
+            "source_url": url,
+            "collection_status": None,
+            "pages_collected": 0,
+            "word_count": 0,
+            "company_name": None,
+            "what_they_sell": None,
+            "target_customer": None,
+            "business_model_guess": None,
+            "positioning": None,
+            "short_summary": None,
+            "likely_bottleneck": None,
+            "messaging_gap": None,
+            "conversion_gap": None,
+            "best_offer_angle": None,
+            "final_output": None,
+            "error_message": str(e),
+            "debug_data": None,
+        }
 

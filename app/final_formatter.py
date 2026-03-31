@@ -35,7 +35,7 @@ def format_final_report(source_url: str, collector_result: dict, analyzer_result
 
     inferred_section = []
     if likely_bottleneck:
-        inferred_section.append(f"- Likely bottleneck: {likely_bottleneck}")
+        inferred_section.append(f"- Likely bottleneck (inferred): {likely_bottleneck}")
     if messaging_gap:
         inferred_section.append(f"- Messaging gap: {messaging_gap}")
     if conversion_gap:
