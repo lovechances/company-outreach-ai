@@ -1,6 +1,3 @@
-import json
-from pathlib import Path
-
 from typing import Optional
 from uuid import uuid4
 
@@ -12,26 +9,6 @@ from app.operator import run_lead_brief_operator
 from app.config import settings
 
 app = FastAPI(title="Lead Brief Operator API")
-
-JOBS_PATH = Path(settings.JOBS_PATH)
-
-
-def load_jobs() -> dict:
-    if not JOBS_PATH.exists():
-        return {}
-
-    with open(JOBS_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def save_jobs(jobs_data: dict) -> None:
-    JOBS_PATH.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(JOBS_PATH, "w", encoding="utf-8") as f:
-        json.dump(jobs_data, f, ensure_ascii=False, indent=2)
-
-# in-memory job store
-jobs = load_jobs()
 
 
 class AnalyzeRequest(BaseModel):
@@ -131,71 +108,23 @@ def shape_operator_response(url: str, result: dict, debug: bool = False) -> dict
 
     return response
 
-
-def run_analysis_job(job_id: str, url: str, debug: bool):
-    try:
-        jobs[job_id]["status"] = "running"
-        save_jobs(jobs)
-
-        raw_result = run_lead_brief_operator(url)
-        shaped_result = shape_operator_response(url, raw_result, debug)
-
-        jobs[job_id]["status"] = "completed"
-        jobs[job_id]["result"] = shaped_result
-        jobs[job_id]["error"] = None
-        save_jobs(jobs)
-
-    except Exception as e:
-        jobs[job_id]["status"] = "failed"
-        jobs[job_id]["result"] = None
-        jobs[job_id]["error"] = str(e)
-        save_jobs(jobs)
-
-
 @app.get("/")
 def root():
     return {
         "message": "Lead Brief Operator API is running."
     }
 
-
-@app.post("/analyze", response_model=AnalyzeAcceptedResponse)
-def analyze_company(payload: AnalyzeRequest, background_tasks: BackgroundTasks):
+@app.post("/analyze", response_model=AnalyzeResponse)
+def analyze_company(payload: AnalyzeRequest):
     url = payload.url.strip()
 
     if not url:
         raise HTTPException(status_code=400, detail="URL is required.")
 
-    job_id = str(uuid4())
+    try:
+        result = run_lead_brief_operator(url)
+        shaped = shape_operator_response(url, result, payload.debug)
+        return shaped
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Operator failed: {e}")
 
-    jobs[job_id] = {
-        "status": "accepted",
-        "url": url,
-        "result": None,
-        "error": None,
-        "debug": payload.debug,
-    }
-
-    save_jobs(jobs)
-
-    background_tasks.add_task(run_analysis_job, job_id, url, payload.debug)
-
-    return {
-        "job_id": job_id,
-        "status": "accepted",
-    }
-
-
-@app.get("/jobs/{job_id}", response_model=JobStatusResponse)
-def get_job_status(job_id: str):
-    job = jobs.get(job_id)
-
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found.")
-
-    return {
-        "job_id": job_id,
-        "status": job["status"],
-        "result": job["result"],
-        "error": job["error"],
-    }
