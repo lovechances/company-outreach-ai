@@ -8,7 +8,10 @@ from app.operator import run_lead_brief_operator
 
 from app.config import settings
 
+from app.logger import get_logger
+
 app = FastAPI(title="Lead Brief Operator API")
+logger = get_logger("api")
 
 
 class AnalyzeRequest(BaseModel):
@@ -123,8 +126,10 @@ def analyze_company(payload: AnalyzeRequest):
 
     try:
         result = run_lead_brief_operator(url)
+        logger.info(f"[API] /analyze called url={url} debug={payload.debug}")
         shaped = shape_operator_response(url, result, payload.debug)
         return shaped
     except Exception as e:
+        logger.exception(f"[API] /analyze failed url={url} error={e}")
         raise HTTPException(status_code=500, detail=f"Operator failed: {e}")
 
