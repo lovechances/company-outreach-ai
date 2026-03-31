@@ -10,7 +10,12 @@ from app.config import settings
 
 from app.logger import get_logger
 
-app = FastAPI(title="Lead Brief Operator API")
+app = FastAPI(
+    title="Company Outreach AI",
+    description="Analyze a company website and generate a business brief, positioning summary, and outreach angle.",
+    version="1.0.4",
+)
+
 logger = get_logger("api")
 
 
@@ -114,7 +119,16 @@ def shape_operator_response(url: str, result: dict, debug: bool = False) -> dict
 @app.get("/")
 def root():
     return {
-        "message": "Lead Brief Operator API is running."
+        "service": "Company Outreach AI",
+        "status": "online",
+        "description": "Analyzes a company website and returns a lead brief, business analysis, and outreach angle.",
+        "version": "1.0",
+        "docs_url": "/docs",
+        "analyze_endpoint": "/analyze",
+        "example_request": {
+            "url": "https://acquire.com/",
+            "debug": False
+        }
     }
 
 @app.post("/analyze", response_model=AnalyzeResponse)
